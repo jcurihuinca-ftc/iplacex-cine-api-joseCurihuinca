@@ -140,3 +140,19 @@ export async function handleDeleteActorByIdRequest(req, res) {
     res.status(400).json({ error: "Id mal formado" });
   }
 }
+
+export async function handleDeleteAllActoresRequest(req, res) {
+  try {
+    const db = getDb();
+
+    const result = await db.collection(actorCollection).deleteMany({});
+
+    res.status(200).json({
+      mensaje: "Actores eliminados correctamente",
+      cantidad: result.deletedCount
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
