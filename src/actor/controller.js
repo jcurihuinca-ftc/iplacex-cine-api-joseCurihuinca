@@ -8,18 +8,25 @@ export async function handleInsertActorRequest(req, res) {
   try {
     const actor = req.body;
     const db = getDb();
-    const objectId = ObjectId.createFromHexString(actor.idPelicula);
-    const pelicula = await db.collection(peliculaCollection).findOne({ _id: objectId });
 
-    if (!pelicula) return res.status(404).json({ error: 'Película no existe' });
+    const peliculaId = ObjectId.createFromHexString(actor.idPelicula);
 
-    actor.idPelicula = pelicula._id.toString();
+    const pelicula = await db.collection(peliculaCollection)
+      .findOne({ _id: peliculaId });
+
+    if (!pelicula) return res.status(404).json({ error: "Película no existe" });
+
+    actor.idPelicula = peliculaId;
+
     await db.collection(actorCollection).insertOne(actor);
-    res.status(201).json({ mensaje: 'Actor agregado' });
+
+    res.status(201).json({ mensaje: "Actor agregado" });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
+
 
 export async function handleGetActoresRequest(req, res) {
   try {
@@ -115,3 +122,21 @@ export async function handleGetActoresByPeliculaIdRequest(req, res) {
   }
 }
 
+
+export async function handleDeleteActorByIdRequest(req, res) {
+  try {
+    const id = ObjectId.createFromHexString(req.params.id);
+    const db = getDb();
+
+    const result = await db.collection(actorCollection).deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Actor no encontrado" });
+    }
+
+    res.status(200).json({ mensaje: "Actor eliminado" });
+
+  } catch (err) {
+    res.status(400).json({ error: "Id mal formado" });
+  }
+}

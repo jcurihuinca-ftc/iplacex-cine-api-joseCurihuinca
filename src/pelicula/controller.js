@@ -59,3 +59,4 @@ export async function handleDeletePeliculaByIdRequest(req, res) {
     res.status(400).json({ error: 'Id mal formado' });
   }
 }
+
