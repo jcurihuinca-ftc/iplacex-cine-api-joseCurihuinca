@@ -24,33 +24,94 @@ export async function handleInsertActorRequest(req, res) {
 export async function handleGetActoresRequest(req, res) {
   try {
     const db = getDb();
+
     const actores = await db.collection(actorCollection).find().toArray();
-    res.status(200).json(actores);
+
+    const actoresConPeliculas = await Promise.all(
+      actores.map(async (actor) => {
+        const pelicula = await db.collection(peliculaCollection)
+          .findOne({ _id: actor.idPelicula });
+
+        return {
+          _id: actor._id,
+          idPelicula: actor.idPelicula.toString(),
+          "nombre Pelicula": pelicula ? pelicula.nombre : "No disponible",
+          nombre: actor.nombre,
+          edad: actor.edad,
+          estadoRetirado: actor.estadoRetirado,
+          premios: actor.premios
+        };
+      })
+    );
+
+    res.status(200).json(actoresConPeliculas);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
+
 
 export async function handleGetActorByIdRequest(req, res) {
   try {
     const id = ObjectId.createFromHexString(req.params.id);
     const db = getDb();
-    const actor = await db.collection(actorCollection).findOne({ _id: id });
 
+    const actor = await db.collection(actorCollection).findOne({ _id: id });
     if (!actor) return res.status(404).json({ error: 'No encontrado' });
-    res.status(200).json(actor);
+
+    const pelicula = await db.collection(peliculaCollection)
+      .findOne({ _id: actor.idPelicula });
+
+    const respuesta = {
+      _id: actor._id,
+      idPelicula: actor.idPelicula.toString(),
+      "nombre Pelicula": pelicula ? pelicula.nombre : "No disponible",
+      nombre: actor.nombre,
+      edad: actor.edad,
+      estadoRetirado: actor.estadoRetirado,
+      premios: actor.premios
+    };
+
+    res.status(200).json(respuesta);
+
   } catch (err) {
-    res.status(400).json({ error: 'Id mal formado' });
+    res.status(400).json({ error: "Id mal formado" });
   }
 }
+
 
 export async function handleGetActoresByPeliculaIdRequest(req, res) {
   try {
-    const peliculaId = req.params.id;
     const db = getDb();
-    const actores = await db.collection(actorCollection).find({ idPelicula: peliculaId }).toArray();
-    res.status(200).json(actores);
+
+    const peliculaId = ObjectId.createFromHexString(req.params.id);
+
+    const pelicula = await db.collection(peliculaCollection)
+      .findOne({ _id: peliculaId });
+
+    if (!pelicula) {
+      return res.status(404).json({ error: "Película no existe" });
+    }
+
+    const actores = await db.collection(actorCollection)
+      .find({ idPelicula: peliculaId })
+      .toArray();
+
+    const actoresConNombrePelicula = actores.map(actor => ({
+      _id: actor._id,
+      idPelicula: actor.idPelicula.toString(),
+      "nombre Pelicula": pelicula.nombre,
+      nombre: actor.nombre,
+      edad: actor.edad,
+      estadoRetirado: actor.estadoRetirado,
+      premios: actor.premios
+    }));
+
+    res.status(200).json(actoresConNombrePelicula);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: "Id mal formado" });
   }
 }
+
